@@ -156,7 +156,6 @@ def download_worker(task_id: str, url: str, mode: str, quality: str):
 
     if mode == "audio":
         if has_ffmpeg:
-            # Extract and convert to mp3
             fmt = "bestaudio/best"
             postprocessors = [{
                 "key":              "FFmpegExtractAudio",
@@ -165,34 +164,32 @@ def download_worker(task_id: str, url: str, mode: str, quality: str):
             }]
             out_ext = "mp3"
         else:
-            # Download best audio as-is (m4a/webm) — no conversion needed
-            fmt = "bestaudio[ext=m4a]/bestaudio[ext=webm]/bestaudio"
+            fmt = "bestaudio[ext=m4a]/bestaudio[ext=webm]/bestaudio/best"
             postprocessors = []
-            out_ext = None   # determined after download
+            out_ext = None
     else:
         if has_ffmpeg:
-            # Prefer pre-muxed mp4; fall back to merging only if ffmpeg present
             fmt = (
                 f"bestvideo[height<={height}][ext=mp4]+bestaudio[ext=m4a]"
+                f"/bestvideo[height<={height}][ext=mp4]+bestaudio"
                 f"/bestvideo[height<={height}]+bestaudio"
+                f"/best[height<={height}][ext=mp4]"
                 f"/best[height<={height}]"
+                f"/best[ext=mp4]"
                 f"/best"
             )
             out_ext = "mp4"
         else:
-            # CRITICAL: only request formats that are already muxed (audio+video in one file)
-            # This avoids any need for ffmpeg to merge streams
+            # No ffmpeg — only pre-muxed formats, very permissive fallback chain
             fmt = (
                 f"best[height<={height}][ext=mp4]"
                 f"/best[height<={height}]"
                 f"/best[ext=mp4]"
                 f"/best"
             )
-            out_ext = None  # determined after download
+            out_ext = None
 
     ydl_opts = {
-        "http_headers": {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"},
-        "cookiefile": "cookies.txt",
         "format":         fmt,
         "outtmpl":        outtmpl,
         "progress_hooks": [hook],
@@ -278,8 +275,8 @@ def _friendly_error(msg: str) -> str:
         return "Rate limited by the platform. Please wait a minute and try again."
     if "http error 403" in m:
         return "Access denied by the platform. This video may be restricted."
-    if "no video formats found" in m or "requested format is not available" in m:
-        return "No downloadable format found at this quality. Try a lower quality setting."
+    if "no video formats found" in m or "requested format is not available" in m or "no downloadable" in m:
+        return "No format available. Try selecting 480p or 360p instead."
     if "merge" in m or "ffmpeg" in m:
         return "Could not process video streams. Try selecting 720p or lower quality."
     if "network" in m or "connection" in m or "timed out" in m:
