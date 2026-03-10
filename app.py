@@ -191,6 +191,7 @@ def download_worker(task_id: str, url: str, mode: str, quality: str):
             out_ext = None  # determined after download
 
     ydl_opts = {
+        "cookiefile": "cookies.txt",
         "format":         fmt,
         "outtmpl":        outtmpl,
         "progress_hooks": [hook],
