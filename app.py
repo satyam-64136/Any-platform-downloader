@@ -189,7 +189,10 @@ def download_worker(task_id: str, url: str, mode: str, quality: str):
             )
             out_ext = None
 
+
     ydl_opts = {
+        "http_headers": {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"},
+        "cookiefile": "cookies.txt",
         "format":         fmt,
         "outtmpl":        outtmpl,
         "progress_hooks": [hook],
